@@ -1,0 +1,37 @@
+version: "3.7"
+services:
+  pg:
+    image: postgres:15
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - ./data.sql:/docker-entrypoint-initdb.d/init.sql
+
+  proxy:
+    image:  ghcr.io/postgresml/pgcat:ruby-pg-fix-arm64
+    network_mode: "service:pg"
+    volumes:
+      - ./pgcat.toml:/etc/pgcat/pgcat.toml
+    command: bash -c "sleep 5 && pgcat /etc/pgcat/pgcat.toml"
+
+  ruby_pg_123:
+    image: ruby:3.0.3
+    network_mode: "service:pg"
+    volumes:
+      - ./main.rb:/app/main.rb
+    command: bash -c "gem install pg:1.2.3 && ruby /app/main.rb"
+
+  ruby_pg_153:
+    image: ruby:3.0.3
+    network_mode: "service:pg"
+    volumes:
+      - ./main.rb:/app/main.rb
+    command: bash -c "gem install pg:1.5.3 && sleep 5 && ruby /app/main.rb"
+
+  ruby_pg_153_fix:
+    image: ruby:3.0.3
+    network_mode: "service:pg"
+    volumes:
+      - ./main.rb:/app/main.rb
+      - ./build.sh:/app/build.sh
+    command: bash -c "/app/build.sh && sleep 10 && ruby /app/main.rb"
